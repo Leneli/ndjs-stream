@@ -26,25 +26,26 @@ const argv = yargs(hideBin(process.argv))
 // проверяем, есть ли файл с таким именем
 fs.stat(`${argv.f}.json`, (error) => {
   // если файла нет - создаем
-  if (error) fs.writeFile(`${argv.f}.json`, '', (err) => {
-    if (err) throw err;
+  if (error) {
+    fs.writeFile(`${argv.f}.json`, '', (err) => {
+      if (err) throw err;
+    });
+  } else {
     // если файл ест - читаем
-    else {
-      const readStream = fs.createReadStream(`${argv.f}.json`);
+    const readStream = fs.createReadStream(`${argv.f}.json`);
 
-      readStream
-        .setEncoding('utf-8')
-        .on('data', (chunk) => fileData += chunk)
-        .on('end', () => {
-          try {
-            const parsedData = JSON.parse(fileData)
-            if (Array.isArray(parsedData)) logs = parsedData;
-          } catch (error) {
-            // console.log('error :>> ', error);
-          }
-        });
-    }
-  });
+    readStream
+      .setEncoding('utf-8')
+      .on('data', (chunk) => fileData += chunk)
+      .on('end', () => {
+        try {
+          const parsedData = JSON.parse(fileData);
+          if (Array.isArray(parsedData)) logs = parsedData;
+        } catch (error) {
+          // console.log('error :>> ', error);
+        }
+      });
+  }
 });
 
 const question = (message) => {
@@ -78,14 +79,30 @@ const main = async () => {
   else {
     console.log('Пока!');
 
-    const logThisGame = {
+    logs.push({
       endTime: new Date(),
       iterations,
       success: successCounter,
       failed: iterations - successCounter,
-    };
+    });
 
-    logs.push(logThisGame);
+    let commonCounter = 0;
+    let success = 0;
+    let failed = 0;
+
+    logs.forEach((item) => {
+      commonCounter += item.iterations;
+      success += item.success;
+      failed += item.failed;
+    });
+
+    const successPercent = success * 100 / commonCounter;
+
+    console.log('<========================================>');
+    console.log('общее количество партий (за все игры)    : ', commonCounter);
+    console.log('количество выигранных/проигранных партий : ', `${success} / ${failed}`);
+    console.log('процентное соотношение выигранных партий : ', Math.round(successPercent));
+    console.log('<========================================>');
 
     const writeStream = fs.createWriteStream(`${argv.f}.json`);
 
